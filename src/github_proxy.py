@@ -59,6 +59,20 @@ class GithubProxy:
                   self._github_owner, self._github_repo, build.get_pr_id(), pr_comment)
         repo.get_pull(build.get_pr_id()).create_issue_comment(pr_comment)
 
+    def hide_previous_comments(self, build):
+        """Hide previous PR comments."""
+        repo = self._get_repo()
+        for comment in repo.get_issue(build.get_pr_id()).get_comments():
+            if HIDDEN_COMMENT in comment.body:  # Check for hidden comment in body
+                try:  # Not critical, catch all GitHub exceptions here
+                    LOG.debug('Hiding previous comment: repo=%s/%s, pr_id=%s, comment_id=%s',
+                              self._github_owner, self._github_repo, build.get_pr_id(), comment.id)
+                    # option to hide or minimize comment is not available https://github.com/jlhood/github-codebuild-logs/issues/25
+                    comment.delete()
+                except GithubException as e:
+                    LOG.warning('Failed to hide previous comment: repo=%s/%s, pr_id=%s, comment_id=%s, error=%s',
+                                self._github_owner, self._github_repo, build.get_pr_id(), comment.id, str(e))
+
     def delete_previous_comments(self, build):
         """Delete previous PR comments."""
         repo = self._get_repo()
